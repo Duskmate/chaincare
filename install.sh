@@ -47,7 +47,7 @@ echo "Selected Hyperledger Fabric binaries installed."
 
 # Clone the repository
 echo "Cloning repository from https://github.com/Duskmate/chaincare.git..."
-git clone https://github.com/Duskmate/chaincare.git $(pwd)
+git clone https://github.com/Duskmate/chaincare.git chaincare
 
 # Check if clone was successful
 if [ $? -ne 0 ]; then
