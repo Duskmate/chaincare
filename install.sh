@@ -44,3 +44,15 @@ cp bin/{peer,orderer,configtxgen,configtxlator,cryptogen,osnadmin,discover,ledge
 chmod +x /usr/local/bin/{peer,orderer,configtxgen,configtxlator,cryptogen,osnadmin,discover,ledgerutil}
 rm -rf bin builders config fabric-binaries.tar.gz
 echo "Selected Hyperledger Fabric binaries installed."
+
+# Clone the repository
+echo "Cloning repository from https://github.com/Duskmate/chaincare.git..."
+git clone https://github.com/Duskmate/chaincare.git $(pwd)
+
+# Check if clone was successful
+if [ $? -ne 0 ]; then
+    echo "Failed to clone repository. Exiting..."
+    exit 1
+fi
+
+echo "Setup complete. Files downloaded."
