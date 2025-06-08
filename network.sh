@@ -312,9 +312,9 @@ function networkDown() {
   COMPOSE_FILES="${COMPOSE_BASE_FILES} ${COMPOSE_CA_FILES}"
 
   if [ "${CONTAINER_CLI}" == "docker" ]; then
-    DOCKER_SOCK=$DOCKER_SOCK ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} ${COMPOSE_ORG3_FILES} down --volumes --remove-orphans
+    DOCKER_SOCK=$DOCKER_SOCK ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} down --volumes --remove-orphans
   elif [ "${CONTAINER_CLI}" == "podman" ]; then
-    ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} ${COMPOSE_ORG3_FILES} down --volumes
+    ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} down --volumes
   else
     fatalln "Container CLI  ${CONTAINER_CLI} not supported"
   fi
@@ -322,8 +322,6 @@ function networkDown() {
 
   # Don't remove the generated artifacts -- note, the ledgers are always removed
   if [ "$MODE" != "restart" ]; then
-    # Bring down the network, deleting the volumes
-    ${CONTAINER_CLI} volume rm docker_orderer.example.com docker_peer0.hospital.example.com docker_peer0.insurance.example.com
     #Cleanup the chaincode containers
     clearContainers
     #Cleanup images
