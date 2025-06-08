@@ -61,7 +61,7 @@ Organizations:
     Name: InsuranceMSP
     # ID to load the MSP definition as
     ID: InsuranceMSP
-    MSPDir: ../organizations/peerOrganizations/org2.example.com/msp
+    MSPDir: ../organizations/peerOrganizations/insurance.example.com/msp
     # Policies defines the set of policies at this level of the config tree
     # For organization policies, their canonical path is usually
     #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
