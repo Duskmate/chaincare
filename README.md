@@ -6,8 +6,8 @@
 ## Features
 
 - 🔐 Secure, tamper-proof medical records
-- 🏥 Hospital only record creation and updates
-- 🧾 Insurance only claim validation and approval
+- 🏥 Hospital: Record creation and updates medical records
+- 🧾 Insurance Company: Claim validation and approval
 - 🔄 Real time data access across organizations
 - 🛡️ Full audit trail with Fabric ledger
 - 📦 Simple scripted setup
