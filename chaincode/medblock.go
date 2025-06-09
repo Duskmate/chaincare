@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
+
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
@@ -12,11 +14,11 @@ type SmartContract struct {
 }
 
 type MedicalRecord struct {
-	ID         string `json:"id"`
-	PatientID  string `json:"patientId"`
-	IPFSHash   string `json:"ipfsHash"`
-	Timestamp  string `json:"timestamp"`
-	CreatedBy  string `json:"createdBy"`
+	ID        string `json:"id"`
+	PatientID string `json:"patientId"`
+	IPFSHash  string `json:"ipfsHash"`
+	Timestamp string `json:"timestamp"`
+	CreatedBy string `json:"createdBy"`
 }
 
 type ClaimStatus string
@@ -34,34 +36,29 @@ type Claim struct {
 	ApprovedBy string      `json:"approvedBy"`
 }
 
-// === Utility Functions ===
+// Utility: Get client MSP ID
+func getClientMSPID(ctx contractapi.TransactionContextInterface) (string, error) {
+	return ctx.GetClientIdentity().GetMSPID()
+}
 
-// Get client identity's full ID
+// Utility: Get client identity's common name
 func getClientID(ctx contractapi.TransactionContextInterface) (string, error) {
 	id, err := ctx.GetClientIdentity().GetID()
 	if err != nil {
 		return "", err
 	}
-	return id, nil
-}
-
-// Get client MSP ID
-func getClientMSPID(ctx contractapi.TransactionContextInterface) (string, error) {
-	mspid, err := ctx.GetClientIdentity().GetMSPID()
-	if err != nil {
-		return "", err
+	parts := strings.Split(id, "/CN=")
+	if len(parts) > 1 {
+		return parts[1], nil
 	}
-	return mspid, nil
+	return id, nil
 }
 
 // === Chaincode Functions ===
 
 func (s *SmartContract) AddMedicalRecord(ctx contractapi.TransactionContextInterface, recordID, patientID, ipfsHash string) error {
-	mspid, err := getClientMSPID(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get MSP ID: %v", err)
-	}
-	if mspid != "HospitalMSP" {
+	mspID, _ := getClientMSPID(ctx)
+	if !strings.Contains(strings.ToLower(mspID), "hospital") {
 		return fmt.Errorf("only hospitals can add records")
 	}
 
@@ -78,33 +75,23 @@ func (s *SmartContract) AddMedicalRecord(ctx contractapi.TransactionContextInter
 	return ctx.GetStub().PutState("RECORD_"+recordID, recordBytes)
 }
 
-func (s *SmartContract) ViewMedicalRecords(ctx contractapi.TransactionContextInterface) ([]*MedicalRecord, error) {
-	clientID, _ := getClientID(ctx)
-	query := fmt.Sprintf(`{"selector":{"patientId":"%s"}}`, clientID)
-
-	resultsIterator, err := ctx.GetStub().GetQueryResult(query)
+func (s *SmartContract) GetMedicalRecord(ctx contractapi.TransactionContextInterface, recordID string) (*MedicalRecord, error) {
+	data, err := ctx.GetStub().GetState("RECORD_" + recordID)
+	if err != nil || data == nil {
+		return nil, fmt.Errorf("record not found")
+	}
+	var record MedicalRecord
+	err = json.Unmarshal(data, &record)
 	if err != nil {
 		return nil, err
 	}
-	defer resultsIterator.Close()
-
-	var records []*MedicalRecord
-	for resultsIterator.HasNext() {
-		queryResponse, _ := resultsIterator.Next()
-		var record MedicalRecord
-		json.Unmarshal(queryResponse.Value, &record)
-		records = append(records, &record)
-	}
-	return records, nil
+	return &record, nil
 }
 
 func (s *SmartContract) RequestClaim(ctx contractapi.TransactionContextInterface, claimID, recordID string) error {
-	mspid, err := getClientMSPID(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get MSP ID: %v", err)
-	}
-	if mspid != "PatientMSP" {
-		return fmt.Errorf("only patients can request claims")
+	mspID, _ := getClientMSPID(ctx)
+	if !(strings.Contains(strings.ToLower(mspID), "patient") || strings.Contains(strings.ToLower(mspID), "insurance")) {
+		return fmt.Errorf("only patients or insurance can request claims")
 	}
 
 	claim := Claim{
@@ -119,11 +106,8 @@ func (s *SmartContract) RequestClaim(ctx contractapi.TransactionContextInterface
 }
 
 func (s *SmartContract) ApproveClaim(ctx contractapi.TransactionContextInterface, claimID string) error {
-	mspid, err := getClientMSPID(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get MSP ID: %v", err)
-	}
-	if mspid != "InsuranceMSP" {
+	mspID, _ := getClientMSPID(ctx)
+	if !strings.Contains(strings.ToLower(mspID), "insurance") {
 		return fmt.Errorf("only insurance can approve claims")
 	}
 
@@ -135,6 +119,10 @@ func (s *SmartContract) ApproveClaim(ctx contractapi.TransactionContextInterface
 	var claim Claim
 	json.Unmarshal(claimBytes, &claim)
 
+	if claim.Status == Rejected {
+		return fmt.Errorf("claims once rejected cannot be approved. please initiate a new claim")
+	}
+
 	claim.Status = Approved
 	claim.ApprovedBy, _ = getClientID(ctx)
 
@@ -143,11 +131,8 @@ func (s *SmartContract) ApproveClaim(ctx contractapi.TransactionContextInterface
 }
 
 func (s *SmartContract) RejectClaim(ctx contractapi.TransactionContextInterface, claimID string) error {
-	mspid, err := getClientMSPID(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get MSP ID: %v", err)
-	}
-	if mspid != "InsuranceMSP" {
+	mspID, _ := getClientMSPID(ctx)
+	if !strings.Contains(strings.ToLower(mspID), "insurance") {
 		return fmt.Errorf("only insurance can reject claims")
 	}
 
@@ -164,6 +149,20 @@ func (s *SmartContract) RejectClaim(ctx contractapi.TransactionContextInterface,
 
 	updatedBytes, _ := json.Marshal(claim)
 	return ctx.GetStub().PutState("CLAIM_"+claimID, updatedBytes)
+}
+
+func (s *SmartContract) GetClaim(ctx contractapi.TransactionContextInterface, claimID string) (*Claim, error) {
+	claimBytes, err := ctx.GetStub().GetState("CLAIM_" + claimID)
+	if err != nil || claimBytes == nil {
+		return nil, fmt.Errorf("claim not found")
+	}
+
+	var claim Claim
+	err = json.Unmarshal(claimBytes, &claim)
+	if err != nil {
+		return nil, err
+	}
+	return &claim, nil
 }
 
 func main() {

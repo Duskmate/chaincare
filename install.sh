@@ -54,5 +54,6 @@ if [ $? -ne 0 ]; then
     echo "Failed to clone repository. Exiting..."
     exit 1
 fi
+sudo chmod -R 755 ./chaincare
 
 echo "Setup complete. Files downloaded."

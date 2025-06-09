@@ -42,6 +42,7 @@ createChannelGenesisBlock() {
 	fi
 	res=$?
 	{ set +x; } 2>/dev/null
+	sudo chmod -R 755 ./chaincare
   verifyResult $res "Failed to generate channel configuration transaction..."
 }
 
