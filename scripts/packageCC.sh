@@ -41,6 +41,12 @@ if [ "$CC_SRC_LANGUAGE" = "go" ]; then
 
   infoln "Vendoring Go dependencies at $CC_SRC_PATH"
   pushd $CC_SRC_PATH
+  
+  # Initialize Go module (only if go.mod doesn't exist)
+  if [ ! -f go.mod ]; then
+    GO111MODULE=on go mod init "$CC_NAME"
+  fi
+
   GO111MODULE=on go mod tidy
   GO111MODULE=on go mod vendor
   popd
