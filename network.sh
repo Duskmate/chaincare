@@ -207,7 +207,7 @@ function createOrgs() {
 
   infoln "Generating CCP files for Org1 and Org2"
   ./organizations/ccp-generate.sh
-  sudo chmod -R 755 ./chaincare
+  sudo chmod -R 755 ../chaincare
 }
 
 # Once you create the organization crypto material, you need to create the
