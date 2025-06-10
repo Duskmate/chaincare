@@ -46,7 +46,7 @@ This spins up your Fabric network, creates the mednet channel, and connects all 
   sudo ./network.sh deployCC -c mednet -ccn medblock -ccp ./chaincode -ccl go
 ```
 
-Deploys the medcc chaincode written in Go, enabling secure transactions for managing medical records and claims.
+Deploys the mednet chaincode written in Go, enabling secure transactions for managing medical records and claims.
     
 ## Try It Out | Interacting with the Network
 
